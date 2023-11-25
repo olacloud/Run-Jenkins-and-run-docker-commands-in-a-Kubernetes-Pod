@@ -1,5 +1,6 @@
-Run Jenkins and run docker commands in a Kubernetes Pod
-Run Jenkins in kubernetes and in order to execute Docker commands inside Jenkins nodes, we run the docker:dind Docker image inside the same pod.
+Run Jenkins and docker commands in a Kubernetes Pod
+Run Jenkins in kubernetes and in order to execute Docker commands inside Jenkins nodes, we run the docker:dind Docker image inside the same pod. \
+**To do this we**
 
 1. Create a namespace called jenkins
 2. Create a persistent storage with a PVC(Persistent Volume Claim)
