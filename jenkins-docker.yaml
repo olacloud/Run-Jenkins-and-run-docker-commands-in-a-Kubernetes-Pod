@@ -1,0 +1,106 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jenkins
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-pvc
+  namespace: jenkins
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: jenkins
+  namespace: jenkins
+  labels:
+    app: jenkins
+spec:
+  containers:
+    - name: docker-in-docker 
+      image: docker:dind
+      securityContext:
+        privileged: true
+      env:
+        - name: DOCKER_TLS_CERTDIR
+          value: /certs
+      volumeMounts:
+        - name: jenkins-data
+          mountPath: /certs/client
+        - name: jenkins-data
+          mountPath: /var/jenkins_home
+      ports:
+      - name: daemon-port
+        containerPort: 2376 
+        protocol: TCP
+
+    - name: jenkins
+      image: chrisolawale/myjenkins-blueocean:2.414.3-1
+      env:
+        - name: DOCKER_HOST
+          value: tcp://localhost:2376
+        - name: DOCKER_CERT_PATH
+          value: /certs/client
+        - name: DOCKER_TLS_VERIFY
+          value: "1"
+        - name: JAVA_OPTS
+          value: "-Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true"
+      volumeMounts:
+        - name: jenkins-data
+          mountPath: /certs/client
+          readOnly: true
+        - name: jenkins-data
+          mountPath: /var/jenkins_home
+        - name: jenkins-data
+          mountPath: /home 
+      ports:
+      - name: jenkins-data
+        containerPort: 8080 
+        protocol: TCP   
+      
+  volumes:
+    - name: jenkins-data
+      persistentVolumeClaim:
+        claimName: jenkins-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins
+  namespace: jenkins
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30000
+  selector:
+    app: jenkins
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-jnlp
+  namespace: jenkins
+spec:
+  type: ClusterIP
+  ports:
+    - port: 50000
+      targetPort: 50000
+  selector:
+    app: jenkins
+
+
